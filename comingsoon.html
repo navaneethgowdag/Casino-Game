@@ -1,0 +1,94 @@
+<html>
+ <head>
+  <title>
+   Coming Soon - Game Under Development
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
+  <style>
+   @keyframes fadeIn {
+    0% {
+     opacity: 0;
+     transform: translateY(20px);
+    }
+    100% {
+     opacity: 1;
+     transform: translateY(0);
+    }
+   }
+   .fade-in {
+    animation: fadeIn 2s ease-in-out;
+   }
+  </style>
+ </head>
+ <body class="bg-gray-900 text-white font-roboto min-h-screen">
+  <nav class="bg-gray-800 p-4">
+   <div class="container mx-auto flex justify-between items-center">
+    <a class="text-2xl font-bold" href="#">
+     Casino Royale
+    </a>
+    <ul class="flex space-x-4">
+     <li>
+      <a class="hover:text-yellow-500" href="index.html">
+       Home
+      </a>
+     </li>
+     <li>
+      <a class="hover:text-yellow-500" href="games.html">
+       Games
+      </a>
+     </li>
+     <li>
+      <a class="hover:text-yellow-500" href="leaderboard.html">
+       Leaderboard
+      </a>
+     </li>
+     <li>
+      <a class="text-red-400 hover:text-red-500 mt-4" href="#" id="logoutBtn">
+       🚪 Logout
+      </a>
+     </li>
+    </ul>
+   </div>
+  </nav>
+  <div class="flex items-center justify-center min-h-screen">
+   <div class="text-center fade-in">
+    <img alt="Placeholder image of a game controller with a futuristic design" class="mx-auto mb-8 transition-transform duration-500 hover:scale-110" height="300" src="https://storage.googleapis.com/a1aa/image/8fg4um_cdqz3uXGpI0B_8LUA61FP98cthPeTtyNeGxs.jpg" width="300"/>
+    <h1 class="text-4xl md:text-6xl font-bold mb-4 transition-opacity duration-500 hover:opacity-80">
+     Coming Soon
+    </h1>
+    <p class="text-xl md:text-2xl mb-8 transition-opacity duration-500 hover:opacity-80">
+     Our exciting new game is under development. Stay tuned for updates!
+    </p>
+   </div>
+  </div>
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-6">
+    <div class="container mx-auto text-center">
+     <p>
+      © 2025 Casino Royale. All rights reserved.
+     </p>
+     <div class="flex justify-center space-x-4 mt-4">
+      <a class="hover:text-yellow-500" href="#">
+       <i class="fab fa-facebook fa-2x">
+       </i>
+      </a>
+      <a class="hover:text-yellow-500" href="#">
+       <i class="fab fa-twitter fa-2x">
+       </i>
+      </a>
+      <a class="hover:text-yellow-500" href="#">
+       <i class="fab fa-instagram fa-2x">
+       </i>
+      </a>
+      <a class="hover:text-yellow-500" href="#">
+       <i class="fab fa-linkedin fa-2x">
+       </i>
+      </a>
+     </div>
+    </div>
+   </footer>
+ </body>
+</html>

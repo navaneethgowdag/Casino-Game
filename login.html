@@ -1,0 +1,120 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Ultimate Gambling Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+    <style>
+        body {
+            background: linear-gradient(to right, #1F2937, #4B5563);
+        }
+        .form-container {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="flex flex-col md:flex-row w-full max-w-6xl bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="md:w-1/2">
+            <img alt="A vibrant casino scene with slot machines and people gambling" class="w-full h-full object-cover" height="800" src="cover.jpg"/>
+        </div>
+        <div class="md:w-1/2 p-8 form-container">
+            <h1 class="text-2xl font-bold text-center text-white mb-6">Login</h1>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                    <input type="text" id="username" name="username" required
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105">
+                        <button class="absolute inset-y-0 right-0 px-3 py-2 text-gray-400" id="togglePassword" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition duration-300 ease-in-out transform hover:scale-105">
+                    Login
+                </button>
+                
+                <p class="text-center text-gray-400 mt-4">
+                    Don't have an account? <a href="register.html" class="text-blue-400 hover:text-blue-500 transition duration-300 ease-in-out transform hover:scale-105">Register here</a>
+                    
+                </p>
+                <p><a href="admin_login.html" class="text-blue-400 hover:text-blue-500 transition duration-300 ease-in-out transform hover:scale-105">Admin Login?</a></p>
+            </form>
+            
+            <div id="message" class="mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+            
+            try {
+                const response = await fetch('http://localhost:3000/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }) // No "admin" key
+
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('balance', data.balance);
+                    
+                    message.textContent = 'Login successful! Redirecting...';
+                    message.className = 'mt-4 text-center text-green-500';
+                    
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    message.textContent = data.error || 'Login failed';
+                    message.className = 'mt-4 text-center text-red-500';
+                }
+            } catch (error) {
+                message.textContent = 'An error occurred. Please try again.';
+                message.className = 'mt-4 text-center text-red-500';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

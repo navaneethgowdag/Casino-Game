@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dice Roll Madness</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+
+  <style>
+    .rolling {
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(180deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .modal-enter {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      opacity: 0;
+    }
+    
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+    
+    .win-animation {
+      animation: pulse 0.5s infinite alternate;
+    }
+    
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+    
+    .shake-animation {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-900 text-white">
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <a class="text-2xl font-bold" href="#">Casino Royale</a>
+      <ul class="flex space-x-4">
+        <li><a class="hover:text-yellow-500" href="index.html">Home</a></li>
+        <li><a class="hover:text-yellow-500" href="games.html">Games</a></li>
+        <li><a class="hover:text-yellow-500" href="leaderboard.html">Leaderboard</a></li>
+        <li><a class="text-red-400 hover:text-red-500" href="#" id="logoutBtn">🚪 Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Game Section -->
+  <div class="text-center p-6 bg-gray-800 rounded-lg shadow-lg mt-10 max-w-md mx-auto">
+    <h1 class="text-3xl font-bold mb-4">🎲 Dice Roll Madness</h1>
+    <p class="text-xl mb-4">Your Balance: <span id="balance" class="font-bold">₹0.00</span></p>
+    
+    <input type="number" id="betAmount" placeholder="Bet Amount" class="mt-4 block w-60 mx-auto px-4 p-2 bg-gray-700 border border-gray-600 rounded-md" />
+    <input type="number" id="chosenNumber" placeholder="Pick a number (1-6)" class="mt-2 block w-60 mx-auto px-4 p-2 bg-gray-700 border border-gray-600 rounded-md" />
+    
+    <div class="text-6xl font-bold mb-4 mt-4" id="dice">🎲</div>
+    <p id="message" class="text-lg mb-4 text-yellow-400"></p>
+
+    <button id="rollButton" onclick="rollDice()" class="w-60 py-2 bg-blue-600 hover:bg-blue-700 rounded-md mt-2">Roll Dice</button>
+    <br><br>
+    <a href="diceplay.html" class="text-blue-400">How To Play</a>
+  </div>
+
+  <!-- Popup Modal -->
+  <div id="popupModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4 modal-enter relative overflow-hidden">
+      <div id="confetti-container" class="absolute inset-0 pointer-events-none"></div>
+      <h2 id="popupTitle" class="text-2xl font-bold mb-2 text-center"></h2>
+      <p id="popupContent" class="text-lg mb-4 text-center"></p>
+      <div class="flex justify-center">
+        <button onclick="closePopup()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-md">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Audio Elements in your HTML -->
+<audio id="rollSound" src="sounds/roll-sound.mp3" preload="auto"></audio>
+<audio id="winSound" src="sounds/win-sound.mp3" preload="auto"></audio>
+<audio id="loseSound" src="sounds/lose-sound.mp3" preload="auto"></audio>
+
+<audio id="backgroundMusic" autoplay loop>
+    <source src="sounds/background-music.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
+  
+  <!-- JavaScript -->
+  <script>
+    let availableAmount = 0;
+    let pendingBalanceChange = 0;
+    
+    document.addEventListener("DOMContentLoaded", fetchBalance);
+    
+    // Get the audio elements
+    const rollSound = document.getElementById("rollSound");
+    const winSound = document.getElementById("winSound");
+    const loseSound = document.getElementById("loseSound");
+    
+    async function fetchBalance() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+    
+      try {
+        const response = await fetch('http://localhost:3000/balance', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+    
+        if (response.ok) {
+          const data = await response.json();
+          availableAmount = parseFloat(data.balance);
+          updateBalance();
+        } else {
+          window.location.href = 'login.html';
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    }
+    
+    function updateBalance() {
+      document.getElementById('balance').innerText = `₹${availableAmount.toFixed(2)}`;
+    }
+    
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    async function updateServerBalance(amount) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+    
+      try {
+        const response = await fetch('http://localhost:3000/update-balance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ amount })
+        });
+    
+        if (response.ok) {
+          const data = await response.json();
+          availableAmount = parseFloat(data.balance);
+          updateBalance();
+        }
+      } catch (error) {
+        console.error('Error updating balance:', error);
+      }
+    }
+    
+    function createConfetti() {
+      const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+      const container = document.getElementById('confetti-container');
+    
+      // Clear previous confetti
+      container.innerHTML = '';
+    
+      // Create new confetti
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animation = `confetti-fall ${2 + Math.random() * 3}s linear forwards`;
+        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+        container.appendChild(confetti);
+      }
+    }
+    
+    async function rollDice() {
+      const betAmount = parseFloat(document.getElementById('betAmount').value);
+      const chosenNumber = parseInt(document.getElementById('chosenNumber').value);
+      const messageBox = document.getElementById('message');
+      const dice = document.getElementById('dice');
+      const rollButton = document.getElementById('rollButton');
+    
+      if (
+        isNaN(betAmount) ||
+        isNaN(chosenNumber) ||
+        chosenNumber < 1 ||
+        chosenNumber > 6 ||
+        betAmount <= 0 ||
+        betAmount > availableAmount
+      ) {
+        messageBox.innerText = 'Invalid bet or number! Choose between 1-6.';
+        return;
+      }
+    
+      rollButton.disabled = true;
+      rollButton.classList.add('opacity-50', 'cursor-not-allowed');
+    
+      messageBox.innerText = 'Rolling the dice... 🎲';
+      dice.classList.add('rolling');
+      rollSound.play();  // Play roll sound when dice rolls
+      await wait(1500);
+      dice.classList.remove('rolling');
+    
+      const rollResult = Math.floor(Math.random() * 6) + 1;
+      dice.innerText = rollResult;
+    
+      if (rollResult === chosenNumber) {
+        const winnings = betAmount * 2;
+        pendingBalanceChange = winnings;
+        createConfetti();
+        winSound.play();  // Play win sound
+        showPopup("🎉 You Win!", `You guessed ${chosenNumber} and rolled ${rollResult}. You won ₹${winnings.toFixed(2)}!`, true);
+      } else {
+        pendingBalanceChange = -betAmount;
+        loseSound.play();  // Play lose sound
+        showPopup("❌ You Lose!", `You guessed ${chosenNumber} but rolled ${rollResult}. You lost ₹${betAmount.toFixed(2)}.`, false);
+      }
+    
+      await wait(1000);
+      rollButton.disabled = false;
+      rollButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    async function closePopup() {
+      const modal = document.getElementById("popupModal");
+      const modalContent = modal.querySelector('div.bg-gray-800');
+    
+      modalContent.classList.remove('win-animation', 'shake-animation');
+      modal.classList.remove("flex");
+      modal.classList.add("hidden");
+    
+      // Debugging: Check if the correct pendingBalanceChange is being applied
+      console.log('Pending Balance Change:', pendingBalanceChange);
+    
+      // Update balance here
+      if (pendingBalanceChange !== 0) {
+        console.log('Updating balance...');
+        await updateServerBalance(pendingBalanceChange);
+        pendingBalanceChange = 0;
+      }
+    }
+    
+    function showPopup(title, content, isWin) {
+      const modal = document.getElementById("popupModal");
+      const modalContent = modal.querySelector('div.bg-gray-800');
+    
+      document.getElementById("popupTitle").innerText = title;
+      document.getElementById("popupContent").innerText = content;
+    
+      // Apply different effects based on win/lose
+      if (isWin) {
+        modalContent.classList.add('win-animation');
+        modalContent.classList.remove('shake-animation');
+      } else {
+        modalContent.classList.add('shake-animation');
+        modalContent.classList.remove('win-animation');
+      }
+    
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+    
+  </script>
+  
+</body>
+</html>

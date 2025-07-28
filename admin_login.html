@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login | LuckyStreet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold text-center text-blue-600 mb-6">Admin Login</h2>
+    <form id="adminLoginForm">
+      <div class="mb-4">
+        <label for="username" class="block text-gray-700">Username</label>
+        <input type="text" id="username" class="w-full p-2 border rounded mt-1" required />
+      </div>
+      <div class="mb-6">
+        <label for="password" class="block text-gray-700">Password</label>
+        <input type="password" id="password" class="w-full p-2 border rounded mt-1" required />
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Login</button>
+      <br>
+      <p id="errorMsg" class="text-center text-sm text-red-600 mt-4 hidden"></p>
+      <a href="login.html" class="block text-gray-700 hover:text-blue-600" style="padding-top: 5%;">User Login?</a>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+  
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('errorMsg');
+  
+      try {
+        const res = await fetch('http://localhost:3000/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, adminLogin: true })
+
+        });
+  
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+  
+        // ✅ Server response should contain is_admin
+        if (!data.is_admin) {
+          throw new Error('Access denied: Admins only');
+        }
+  
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', username);
+        window.location.href = 'admin_index.html'; // ✅ Admin-only page
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  </script>
+  
+</body>
+</html>

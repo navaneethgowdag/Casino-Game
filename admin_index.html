@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard | LuckyStreet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .admin-win {
+      background-color: #f0fdf4;
+      border-left: 4px solid #10B981;
+    }
+    .admin-loss {
+      background-color: #fef2f2;
+      border-left: 4px solid #EF4444;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<!-- 🔐 Admin Auth Check -->
+<script>
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    window.location.href = "admin_login.html";
+  } else {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.is_admin) {
+        alert("Access denied. Admins only.");
+        localStorage.clear();
+        window.location.href = "admin_login.html";
+      }
+    } catch (err) {
+      console.error("Invalid token:", err);
+      localStorage.clear();
+      window.location.href = "admin_login.html";
+    }
+  }
+</script>
+
+<div class="flex min-h-screen">
+  <aside class="w-64 bg-white shadow-md hidden md:block">
+    <div class="p-6">
+      <h1 class="text-2xl font-bold text-blue-600">LuckyStreet</h1>
+    </div>
+    <nav class="p-4 space-y-4">
+      <a href="#" class="block text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
+      <a href="admin_users.html" class="block text-gray-700 hover:text-blue-600">Users</a>
+      <a href="feedback.html" class="block text-gray-700 hover:text-blue-600">Feedback</a>
+      <a href="admin_login.html" class="block text-gray-700 hover:text-red-500">Logout</a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 p-6">
+    <header class="mb-6 flex justify-between items-center">
+      <h2 class="text-3xl font-semibold text-gray-800">Admin Dashboard</h2>
+      <span class="text-gray-500">Welcome, Admin!</span>
+    </header>
+
+    <!-- Overview Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="text-lg font-semibold text-gray-700">Total Users</h3>
+        <p class="mt-2 text-2xl font-bold text-blue-600" id="totalUsers">0</p>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="text-lg font-semibold text-gray-700">Admin Wins</h3>
+        <p class="mt-2 text-2xl font-bold text-green-500" id="adminWins">$0.00</p>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="text-lg font-semibold text-gray-700">Admin Losses</h3>
+        <p class="mt-2 text-2xl font-bold text-red-500" id="adminLosses">$0.00</p>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="text-lg font-semibold text-gray-700">Net Profit</h3>
+        <p class="mt-2 text-2xl font-bold text-purple-500" id="netProfit">$0.00</p>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Win/Loss Distribution</h3>
+        <canvas id="winLossChart"></canvas>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Profit Trend</h3>
+        <canvas id="profitTrendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Recent Transactions -->
+    <section class="mt-10">
+      <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Transactions (Admin Perspective)</h3>
+      <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table class="min-w-full table-auto">
+          <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+            <tr>
+              <th class="py-3 px-6 text-left">User</th>
+              <th class="py-3 px-6 text-left">Result</th>
+              <th class="py-3 px-6 text-left">Amount</th>
+              <th class="py-3 px-6 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600" id="transactionTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Win/Loss Details -->
+    <section class="mt-10">
+      <h3 class="text-xl font-semibold mb-4 text-gray-800">Detailed Transactions</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="detailedTransactions">
+        <!-- Will be filled with transaction cards -->
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Dashboard Fetch Script -->
+<script>
+  let winLossChart, profitTrendChart;
+
+  async function fetchStats() {
+    try {
+      const res = await fetch('http://localhost:3000/admin/summary', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!res.ok) throw new Error('Unauthorized or server error');
+      const data = await res.json();
+
+      // Calculate statistics from admin perspective
+      const initialBalance = 100;
+      let adminWins = 0; // When users lose money
+      let adminLosses = 0; // When users win money
+      let winCount = 0;
+      let lossCount = 0;
+
+      data.users.forEach(user => {
+        const difference = user.balance - initialBalance;
+        if (difference < 0) { // User lost money = admin won
+          adminWins += Math.abs(difference);
+          winCount++;
+        } else { // User won money = admin lost
+          adminLosses += difference;
+          lossCount++;
+        }
+      });
+
+      const netProfit = adminWins - adminLosses;
+
+      // Update cards
+      document.getElementById('totalUsers').textContent = data.totalUsers;
+      document.getElementById('adminWins').textContent = `$${adminWins.toFixed(2)}`;
+      document.getElementById('adminLosses').textContent = `$${adminLosses.toFixed(2)}`;
+      document.getElementById('netProfit').textContent = `$${netProfit.toFixed(2)}`;
+
+      // Update tables
+      const tbody = document.getElementById('transactionTableBody');
+      const detailedContainer = document.getElementById('detailedTransactions');
+      tbody.innerHTML = '';
+      detailedContainer.innerHTML = '';
+
+      const today = new Date().toISOString().split('T')[0];
+      data.users.forEach(user => {
+        const difference = user.balance - initialBalance;
+        const isAdminWin = difference < 0; // Admin wins when user loses
+        const amount = Math.abs(difference);
+
+        // Transactions table
+        const transRow = document.createElement('tr');
+        transRow.className = `border-b ${isAdminWin ? 'admin-win' : 'admin-loss'}`;
+        transRow.innerHTML = `
+          <td class="py-3 px-6">${user.username}</td>
+          <td class="py-3 px-6 font-medium ${isAdminWin ? 'text-green-500' : 'text-red-500'}">${isAdminWin ? 'WIN' : 'LOSS'}</td>
+          <td class="py-3 px-6 ${isAdminWin ? 'text-green-600' : 'text-red-600'}">${isAdminWin ? '+' : '-'}$${amount.toFixed(2)}</td>
+          <td class="py-3 px-6">${today}</td>`;
+        tbody.appendChild(transRow);
+
+        // Detailed transaction cards
+        const transactionCard = document.createElement('div');
+        transactionCard.className = `p-4 rounded-lg shadow ${isAdminWin ? 'admin-win' : 'admin-loss'}`;
+        transactionCard.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="font-semibold">${user.username}</h4>
+              <p class="text-sm text-gray-500">${today}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-medium ${isAdminWin ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+              ${isAdminWin ? 'ADMIN WIN' : 'ADMIN LOSS'}
+            </span>
+          </div>
+          <div class="mt-4">
+            <p class="text-2xl font-bold ${isAdminWin ? 'text-green-600' : 'text-red-600'}">
+              ${isAdminWin ? '+' : '-'}$${amount.toFixed(2)}
+            </p>
+            <p class="text-sm text-gray-500 mt-1">User balance: $${user.balance.toFixed(2)}</p>
+          </div>`;
+        detailedContainer.appendChild(transactionCard);
+      });
+
+      // Initialize or update charts
+      updateCharts(winCount, lossCount, adminWins, adminLosses);
+
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
+      alert('Failed to load admin dashboard.');
+    }
+  }
+
+  function updateCharts(winCount, lossCount, adminWins, adminLosses) {
+    // Win/Loss Distribution Chart
+    const winLossCtx = document.getElementById('winLossChart').getContext('2d');
+    
+    if (winLossChart) {
+      winLossChart.destroy();
+    }
+    
+    winLossChart = new Chart(winLossCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Admin Wins', 'Admin Losses'],
+        datasets: [{
+          data: [winCount, lossCount],
+          backgroundColor: ['#10B981', '#EF4444'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((value / total) * 100);
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Profit Trend Chart
+    const profitTrendCtx = document.getElementById('profitTrendChart').getContext('2d');
+    
+    if (profitTrendChart) {
+      profitTrendChart.destroy();
+    }
+    
+    profitTrendChart = new Chart(profitTrendCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Admin Wins', 'Admin Losses', 'Net Profit'],
+        datasets: [{
+          label: 'Amount ($)',
+          data: [adminWins, -adminLosses, adminWins - adminLosses],
+          backgroundColor: [
+            '#10B981',
+            '#EF4444',
+            '#8B5CF6'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Amount ($)'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: $${Math.abs(context.raw).toFixed(2)}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', fetchStats);
+</script>
+
+</body>
+</html>
