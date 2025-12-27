@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Users | LuckyStreet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md hidden md:block">
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-blue-600">LuckyStreet</h1>
+      </div>
+      <nav class="p-4 space-y-4">
+        <a href="admin_index.html" class="block text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
+        <a href="admin_users.html" class="block text-gray-700 hover:text-blue-600">Users</a>
+        <a href="feedback.html" class="block text-gray-700 hover:text-blue-600">Feedback</a>
+        <a href="admin_login.html" class="block text-gray-700 hover:text-red-500">Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6">
+      <header class="mb-6 flex justify-between items-center">
+        <h2 class="text-3xl font-semibold text-gray-800">User Management</h2>
+      </header>
+
+      <!-- Active Users Table -->
+      <section class="bg-white p-4 rounded-lg shadow mb-10">
+        <h3 class="text-xl font-semibold mb-4 text-gray-700">Active Users</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+              <tr>
+                <th class="py-3 px-6 text-left">Username</th>
+                <th class="py-3 px-6 text-left">Balance</th>
+                <th class="py-3 px-6 text-left">Status</th>
+                <th class="py-3 px-6 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600" id="userTableBody">
+              <!-- Filled via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Banned Users Table -->
+      <section class="bg-white p-4 rounded-lg shadow">
+        <h3 class="text-xl font-semibold mb-4 text-red-600">Banned Users</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+              <tr>
+                <th class="py-3 px-6 text-left">Username</th>
+                <th class="py-3 px-6 text-left">Balance</th>
+                <th class="py-3 px-6 text-left">Status</th>
+                <th class="py-3 px-6 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600" id="bannedTableBody">
+              <!-- Filled via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+  
+    // Admin Token Validation
+    if (!token) {
+      window.location.href = "admin_login.html";
+    } else {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (!payload.is_admin) {
+          alert("Access denied. Admins only.");
+          localStorage.clear();
+          window.location.href = "admin_login.html";
+        }
+      } catch (err) {
+        console.error("Invalid token format:", err);
+        localStorage.clear();
+        window.location.href = "admin_login.html";
+      }
+    }
+  
+    // Fetch users for admin dashboard
+    async function fetchUsers() {
+      try {
+        const res = await fetch('http://localhost:3000/leaderboard', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+  
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const users = await res.json();
+  
+        const activeTbody = document.getElementById('userTableBody');
+        const bannedTbody = document.getElementById('bannedTableBody');
+        activeTbody.innerHTML = '';
+        bannedTbody.innerHTML = '';
+  
+        users.forEach(user => {
+          const row = document.createElement('tr');
+          row.className = "border-b hover:bg-gray-50";
+  
+          const status = user.banned ? 'Banned' : 'Active';
+          row.innerHTML = `
+            <td class="py-3 px-6">${user.username}</td>
+            <td class="py-3 px-6 text-green-600">$${user.balance.toFixed(2)}</td>
+            <td class="py-3 px-6">${status}</td>
+            <td class="py-3 px-6">
+              <button class="reset-btn text-sm text-blue-500 hover:underline">Reset</button>
+              <button class="ban-btn ml-2 text-sm ${user.banned ? 'text-green-500' : 'text-red-500'} hover:underline">
+                ${user.banned ? 'Unban' : 'Ban'}
+              </button>
+            </td>
+          `;
+  
+          // Hook up buttons
+          row.querySelector('.reset-btn').addEventListener('click', () => resetBalance(user.username));
+          row.querySelector('.ban-btn').addEventListener('click', () => toggleBan(user.username, user.banned));
+  
+          if (user.banned) {
+            bannedTbody.appendChild(row);
+          } else {
+            activeTbody.appendChild(row);
+          }
+        });
+      } catch (err) {
+        console.error('Error loading users:', err);
+        alert('Could not load user list.');
+      }
+    }
+  
+    async function resetBalance(username) {
+      try {
+        const res = await fetch('http://localhost:3000/admin/reset-balance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ username })
+        });
+  
+        if (!res.ok) throw new Error(await res.text());
+        fetchUsers();
+      } catch (err) {
+        console.error('Failed to reset balance:', err);
+        alert('Reset failed: ' + err.message);
+      }
+    }
+  
+    async function toggleBan(username, currentStatus) {
+      try {
+        const res = await fetch('http://localhost:3000/admin/set-ban', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ username, banned: !currentStatus })
+        });
+  
+        if (!res.ok) throw new Error(await res.text());
+        fetchUsers();
+      } catch (err) {
+        console.error('Failed to toggle ban:', err);
+        alert('Ban/Unban failed: ' + err.message);
+      }
+    }
+  
+    document.addEventListener('DOMContentLoaded', fetchUsers);
+  </script>
+  
+  
+</body>
+</html>

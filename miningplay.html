@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>How to Play - Minesweeper Game</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-900 text-white">
+  <nav class="bg-gray-800 p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <a class="text-2xl font-bold" href="#">Casino Royale</a>
+      <ul class="flex space-x-4">
+        <li><a class="hover:text-yellow-500" href="index.html">Home</a></li>
+        <li><a class="hover:text-yellow-500" href="#">Games</a></li>
+        <li><a class="hover:text-yellow-500" href="#">Promotions</a></li>
+        <li><a class="text-red-400 hover:text-red-500" href="#" id="logoutBtn">🚪 Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="p-8 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-yellow-400 mb-6">How to Play: Minesweeper-Like Game</h1>
+    
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-2">🎯 Objective</h2>
+      <p class="text-gray-300">Reveal as many safe tiles (💎 gems) as possible without hitting a bomb (💣). Each gem increases your winnings. Cash out before you hit a bomb to secure your earnings!</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-2">🕹️ How It Works</h2>
+      <ul class="list-disc list-inside text-gray-300 space-y-2">
+        <li>Enter your <strong>Bet Amount</strong>.</li>
+        <li>Select how many <strong>Bombs</strong> you want on the grid (more bombs = higher risk, higher reward).</li>
+        <li>Click <strong>"Start Game"</strong> to generate the grid and begin playing.</li>
+        <li>Click tiles to reveal 💎 or 💣.</li>
+        <li>Each 💎 found increases your <strong>Current Winnings</strong>.</li>
+        <li>You can click <strong>"Cash Out"</strong> at any time to secure your winnings.</li>
+        <li>If you hit a 💣, you lose the bet.</li>
+      </ul>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-2">💡 Tips</h2>
+      <ul class="list-disc list-inside text-gray-300 space-y-2">
+        <li>Start with fewer bombs if you're new.</li>
+        <li>More bombs = higher multiplier but also more risk!</li>
+        <li>Use the "Cash Out" button wisely — don't get too greedy!</li>
+      </ul>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-2xl font-semibold mb-2">📊 Multiplier System</h2>
+      <p class="text-gray-300">The multiplier increases based on the number of bombs and revealed gems. Revealing more gems without hitting a bomb increases the winnings exponentially.</p>
+    </section>
+
+    <div class="text-center mt-8">
+      <a href="mining.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-lg font-semibold">Start Playing</a>
+    </div>
+  </main>
+
+  <footer class="bg-gray-800 text-center text-gray-400 py-4 mt-12">
+    &copy; 2025 Casino Royale. All rights reserved.
+  </footer>
+
+  <script>
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

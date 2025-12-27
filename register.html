@@ -1,0 +1,212 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Ultimate Gambling Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+    <style>
+        body {
+            background: linear-gradient(to right, #1F2937, #4B5563);
+        }
+        .form-container {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="flex flex-col md:flex-row w-full max-w-6xl bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="md:w-1/2">
+            <img alt="A vibrant casino scene with slot machines and people gambling" class="w-full h-full object-cover" height="800" src="cover.jpg" width="600"/>
+        </div>
+        <div class="md:w-1/2 p-8 form-container">
+            <h1 class="text-2xl font-bold text-center text-white mb-6">Create Account</h1>
+            <p class="text-center text-gray-300 mb-6">Start with ₹100 free balance!</p>
+            <form class="space-y-4" id="registerForm">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1" for="username">Username</label>
+                    <input class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105" id="username" name="username" required="" type="text"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1" for="password">Password</label>
+                    <div class="relative">
+                        <input class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105" id="password" name="password" required="" type="password"/>
+                        <button class="absolute inset-y-0 right-0 px-3 py-2 text-gray-400" id="togglePassword" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-400" id="passwordStrength"></div>
+                    <ul class="text-sm text-gray-400 mt-2">
+                        <li class="flex items-center" id="length">
+                            <i class="fas fa-times mr-2"></i>
+                            At least 8 characters
+                        </li>
+                        <li class="flex items-center" id="uppercase">
+                            <i class="fas fa-times mr-2"></i>
+                            At least one uppercase letter
+                        </li>
+                        <li class="flex items-center" id="lowercase">
+                            <i class="fas fa-times mr-2"></i>
+                            At least one lowercase letter
+                        </li>
+                        <li class="flex items-center" id="number">
+                            <i class="fas fa-times mr-2"></i>
+                            At least one number
+                        </li>
+                        <li class="flex items-center" id="special">
+                            <i class="fas fa-times mr-2"></i>
+                            At least one special character
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1" for="confirmPassword">Confirm Password</label>
+                    <div class="relative">
+                        <input class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out transform hover:scale-105" id="confirmPassword" name="confirmPassword" required="" type="password"/>
+                        <button class="absolute inset-y-0 right-0 px-3 py-2 text-gray-400" id="toggleConfirmPassword" type="button">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition duration-300 ease-in-out transform hover:scale-105" type="submit">
+                    Register
+                </button>
+                <p class="text-center text-gray-400 mt-4">
+                    Already have an account?
+                    <a class="text-blue-400 hover:text-blue-500 transition duration-300 ease-in-out transform hover:scale-105" href="login.html">Login here</a>
+                </p>
+            </form>
+            <div class="mt-4 text-center" id="message"></div>
+        </div>
+    </div>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const lengthCriteria = document.getElementById('length');
+        const uppercaseCriteria = document.getElementById('uppercase');
+        const lowercaseCriteria = document.getElementById('lowercase');
+        const numberCriteria = document.getElementById('number');
+        const specialCriteria = document.getElementById('special');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        toggleConfirmPassword.addEventListener('click', () => {
+            const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmPasswordInput.setAttribute('type', type);
+            toggleConfirmPassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        passwordInput.addEventListener('input', () => {
+            const value = passwordInput.value;
+            let strength = 0;
+
+            if (value.length >= 8) {
+                lengthCriteria.classList.replace('text-gray-400', 'text-green-500');
+                lengthCriteria.querySelector('i').classList.replace('fa-times', 'fa-check');
+                strength++;
+            } else {
+                lengthCriteria.classList.replace('text-green-500', 'text-gray-400');
+                lengthCriteria.querySelector('i').classList.replace('fa-check', 'fa-times');
+            }
+
+            if (/[A-Z]/.test(value)) {
+                uppercaseCriteria.classList.replace('text-gray-400', 'text-green-500');
+                uppercaseCriteria.querySelector('i').classList.replace('fa-times', 'fa-check');
+                strength++;
+            } else {
+                uppercaseCriteria.classList.replace('text-green-500', 'text-gray-400');
+                uppercaseCriteria.querySelector('i').classList.replace('fa-check', 'fa-times');
+            }
+
+            if (/[a-z]/.test(value)) {
+                lowercaseCriteria.classList.replace('text-gray-400', 'text-green-500');
+                lowercaseCriteria.querySelector('i').classList.replace('fa-times', 'fa-check');
+                strength++;
+            } else {
+                lowercaseCriteria.classList.replace('text-green-500', 'text-gray-400');
+                lowercaseCriteria.querySelector('i').classList.replace('fa-check', 'fa-times');
+            }
+
+            if (/\d/.test(value)) {
+                numberCriteria.classList.replace('text-gray-400', 'text-green-500');
+                numberCriteria.querySelector('i').classList.replace('fa-times', 'fa-check');
+                strength++;
+            } else {
+                numberCriteria.classList.replace('text-green-500', 'text-gray-400');
+                numberCriteria.querySelector('i').classList.replace('fa-check', 'fa-times');
+            }
+
+            if (/[\W_]/.test(value)) {
+                specialCriteria.classList.replace('text-gray-400', 'text-green-500');
+                specialCriteria.querySelector('i').classList.replace('fa-times', 'fa-check');
+                strength++;
+            } else {
+                specialCriteria.classList.replace('text-green-500', 'text-gray-400');
+                specialCriteria.querySelector('i').classList.replace('fa-check', 'fa-times');
+            }
+
+            const strengthText = ['Very Weak', 'Weak', 'Moderate', 'Strong', 'Very Strong'];
+            passwordStrength.textContent = `Password Strength: ${strengthText[strength]}`;
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const message = document.getElementById('message');
+            
+            if (password !== confirmPassword) {
+                message.textContent = 'Passwords do not match!';
+                message.className = 'mt-4 text-center text-red-500';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    message.textContent = 'Registration successful! Redirecting to login...';
+                    message.className = 'mt-4 text-center text-green-500';
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    message.textContent = data.error || 'Registration failed';
+                    message.className = 'mt-4 text-center text-red-500';
+                }
+            } catch (error) {
+                message.textContent = 'An error occurred. Please try again.';
+                message.className = 'mt-4 text-center text-red-500';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

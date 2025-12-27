@@ -1,0 +1,254 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   LuckyStreet - Ultimate Gambling Experience
+  </title>
+  <meta content="Experience the ultimate gambling adventure at PetParx Casino. Play games, win big, and enjoy a seamless gaming experience." name="description"/>
+  <meta content="casino, gambling, games, betting, poker, roulette, mines" name="keywords"/>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <style>
+   @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.5s forwards;
+    }
+    
+    .grid > div {
+        animation-delay: 0.1s; /* Adjust delay for staggered effect */
+    }
+    
+    .grid > div:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .grid > div:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+    body {
+      background: linear-gradient(to right, #1F2937, #4B5563);
+    }
+    .carousel {
+      position: relative;
+      overflow: hidden;
+    }
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+    }
+    .carousel-item {
+      min-width: 100%;
+      box-sizing: border-box;
+    }
+    .carousel-control-prev, .carousel-control-next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background-color: rgba(0, 0, 0, 0.5);
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .carousel-control-prev {
+      left: 10px;
+    }
+    .carousel-control-next {
+      right: 10px;
+    }
+  </style>
+ </head>
+ <body class="text-white">
+  <nav class="bg-gray-800 p-4">
+   <div class="container mx-auto flex justify-between items-center">
+    <a class="text-2xl font-bold" href="#">
+     Casino Royale
+    </a>
+    <ul class="flex space-x-4">
+     <li>
+      <a class="hover:text-yellow-500" href="index.html">
+       Home
+      </a>
+     </li>
+     <li>
+      <a class="hover:text-yellow-500" href="games.html">
+       Games
+      </a>
+     </li>
+     <li>
+      <a class="hover:text-yellow-500" href="leaderboard.html">
+       Leaderboard
+      </a>
+     </li>
+     <li>
+      <a class="text-red-400 hover:text-red-500 mt-4" href="#" id="logoutBtn">
+       🚪 Logout
+      </a>
+     </li>
+    </ul>
+   </div>
+  </nav>
+  <!-- Games Section -->
+  <section class="py-12">
+   <div class="container mx-auto text-center">
+    <h2 class="text-3xl md:text-4xl font-bold mb-8">
+     Popular Games
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+     <a href="spining.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A slot machine with bright lights and colorful symbols" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/5LySj3BAoBB4X8TmbZ6xm-gDecoYWpDZ8MV4V144FkI.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Spinning
+       </h3>
+       <p>
+        Spin the reels and win big with our exciting slot games.
+       </p>
+      </div>
+     </a>
+     <a href="mining.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A miner with a pickaxe in a dark cave" class="w-full h-48 object-cover mb-4" height="200" src="https://images.evaplatform.tech/cdn-cgi/image/format=auto,width=418,height=360,fit=scale-down/Casino/eva-ig/games/turbogames-mines.png" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Mining
+       </h3>
+       <p>
+        Dig deep and discover treasures in our mining games.
+       </p>
+      </div>
+     </a>
+     <a href="dice.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A pair of dice rolling on a green felt table" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/RxOVgsDVJWY6Vp240_8V7Z0MN_6wROWvwdO7X9OrJUs.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Dice Roll
+       </h3>
+       <p>
+        Roll the dice and test your luck in our dice games.
+       </p>
+      </div>
+     </a>
+    </div>
+   </div>
+  </section>
+  <!-- Games Section 2 -->
+  <section class="py-12">
+   <div class="container mx-auto text-center">
+    <h2 class="text-3xl md:text-4xl font-bold mb-8">
+     Coming Soon
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A blackjack table with cards and chips" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/-jExPGSsHhxRnj78knrKkAQ0irh27vKKlOkJCQ7mliw.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Blackjack
+       </h3>
+       <p>
+        Try your luck and strategy in our upcoming blackjack games.
+       </p>
+      </div>
+     </a>
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A baccarat table with cards and chips" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/-DAKP68xXQgsDLlWK64sGOuJ9NtFKJ-5zbrvproPyWc.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Baccarat
+       </h3>
+       <p>
+        Experience the thrill of baccarat in our new games.
+       </p>
+      </div>
+     </a>
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A craps table with dice and chips" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/buvlNjIGLHDENBSqk9A7wTsfsLnUb75CtzbvQg_WPoQ.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Craps
+       </h3>
+       <p>
+        Roll the dice and win big in our upcoming craps games.
+       </p>
+      </div>
+     </a>
+    </div>
+   </div>
+   <div class="container mx-auto text-center">
+    <h2 class="text-3xl md:text-4xl font-bold mb-8">
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A keno board with numbers" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/Uwft2T4qDh9eTFumTP4A4iNK3YZRIce9S13OPSfKfkE.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Keno
+       </h3>
+       <p>
+        Try your luck with our exciting keno games.
+       </p>
+      </div>
+     </a>
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A bingo card with markers" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/hh6yF7r0m5ob4kydwogQFPMg8kIuye-B6RiFsLhXsZ8.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Bingo
+       </h3>
+       <p>
+        Get ready for fun and excitement with our upcoming bingo games.
+       </p>
+      </div>
+     </a>
+     <a href="comingsoon.html">
+      <div class="bg-gray-800 p-6 rounded-lg transition-transform transform hover:scale-105">
+       <img alt="A scratch card with a coin" class="w-full h-48 object-cover mb-4" height="200" src="https://storage.googleapis.com/a1aa/image/jE6AEBeQUhC-6x7VNqFeDQVVpcwuRCxhhzd1KxytU68.jpg" width="300"/>
+       <h3 class="text-2xl font-bold mb-2">
+        Scratch Cards
+       </h3>
+       <p>
+        Scratch and win with our new scratch card games.
+       </p>
+      </div>
+     </a>
+    </div>
+   </div>
+  </section>
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-6">
+   <div class="container mx-auto text-center">
+    <p>
+     © 2025 Casino Royale. All rights reserved.
+    </p>
+    <div class="flex justify-center space-x-4 mt-4">
+     <a class="hover:text-yellow-500" href="#">
+      <i class="fab fa-facebook fa-2x">
+      </i>
+     </a>
+     <a class="hover:text-yellow-500" href="#">
+      <i class="fab fa-twitter fa-2x">
+      </i>
+     </a>
+     <a class="hover:text-yellow-500" href="#">
+      <i class="fab fa-instagram fa-2x">
+      </i>
+     </a>
+     <a class="hover:text-yellow-500" href="#">
+      <i class="fab fa-linkedin fa-2x">
+      </i>
+     </a>
+    </div>
+   </div>
+  </footer>
+ </body>
+</html>
