@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Ultimate Gambling Experience</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .gold { background-color: #FFD700; }
+        .silver { background-color: #C0C0C0; }
+        .bronze { background-color: #CD7F32; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <nav class="bg-gray-800 p-4">
+      <div class="container mx-auto flex justify-between items-center">
+        <a class="text-2xl font-bold" href="#">Casino Royale</a>
+        <ul class="flex space-x-4">
+          <li><a class="hover:text-yellow-500" href="index.html">Home</a></li>
+          <li><a class="hover:text-yellow-500" href="games.html">Games</a></li>
+          <li><a class="hover:text-yellow-500" href="leaderboard.html">Leaderboard</a></li>
+          <li><a class="text-red-400 hover:text-red-500" href="#" id="logoutBtn">🚪 Logout</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="container mx-auto py-8 px-4">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">🏆 Leaderboard</h1>
+            <p class="text-xl text-gray-300">Top players by balance</p>
+        </header>
+
+        <div class="flex justify-center">
+            <div class="w-full max-w-2xl">
+                <div id="leaderboard" class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                    <!-- Leaderboard will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <a href="index.html" class="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-lg">
+                ← Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function fetchLeaderboard() {
+            try {
+                const response = await fetch('http://localhost:3000/leaderboard');
+                const players = await response.json();
+                
+                const leaderboard = document.getElementById('leaderboard');
+                leaderboard.innerHTML = `
+                    <div class="grid grid-cols-12 gap-2 p-4 bg-gray-700 font-bold">
+                        <div class="col-span-1">Rank</div>
+                        <div class="col-span-8">Player</div>
+                        <div class="col-span-3 text-right">Balance</div>
+                    </div>
+                    ${players.map((player, index) => `
+                        <div class="grid grid-cols-12 gap-2 p-4 border-b border-gray-700 items-center 
+                            ${index < 3 ? 'pulse' : ''}">
+                            <div class="col-span-1">
+                                ${index === 0 ? '🥇' : 
+                                  index === 1 ? '🥈' : 
+                                  index === 2 ? '🥉' : index + 1}
+                            </div>
+                            <div class="col-span-8 font-medium">${player.username}</div>
+                            <div class="col-span-3 text-right font-bold text-green-400">
+                                ₹${player.balance.toFixed(2)}
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboard').innerHTML = `
+                    <div class="p-8 text-center text-red-400">
+                        Failed to load leaderboard. Please try again later.
+                    </div>
+                `;
+            }
+        }
+
+        // Load leaderboard when page opens
+        document.addEventListener('DOMContentLoaded', fetchLeaderboard);
+    </script>
+</body>
+</html>

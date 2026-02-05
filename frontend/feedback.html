@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Feedback | Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+  <!-- Wrapper -->
+  <div class="min-h-screen flex">
+    
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md hidden md:block">
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-blue-600">LuckyStreet</h1>
+      </div>
+      <nav class="p-4 space-y-4">
+        <a href="admin_index.html" class="block text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
+        <a href="admin_users.html" class="block text-gray-700 hover:text-blue-600">Users</a>
+        <a href="feedback.html" class="block text-blue-600 font-bold">Feedback</a>
+        <a href="admin_login.html" class="block text-gray-700 hover:text-red-500">Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6">
+      <h1 class="text-3xl font-bold mb-6 text-blue-700">User Feedback</h1>
+
+      <div id="feedbackList" class="space-y-4">
+        <!-- Feedback entries will go here -->
+      </div>
+
+      <p id="errorMsg" class="text-red-500 mt-6 hidden text-center font-medium"></p>
+    </main>
+  </div>
+
+  <!-- Script -->
+  <script>
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      window.location.href = 'admin_login.html';
+    } else {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (!payload.is_admin) {
+          alert("Admins only. Redirecting...");
+          localStorage.clear();
+          window.location.href = "admin_login.html";
+        }
+      } catch (err) {
+        localStorage.clear();
+        window.location.href = "admin_login.html";
+      }
+    }
+
+    async function fetchFeedbacks() {
+      try {
+        const response = await fetch('http://localhost:3000/admin/feedback', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Error ${response.status}: ${text}`);
+        }
+
+        const data = await response.json();
+        const list = document.getElementById('feedbackList');
+
+        if (data.length === 0) {
+          list.innerHTML = '<p class="text-gray-500 text-center italic">No feedback submitted yet.</p>';
+          return;
+        }
+
+        data.forEach(feedback => {
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500';
+          card.innerHTML = `
+            <div class="text-sm text-gray-500 mb-1">From: <span class="font-semibold">${feedback.username}</span></div>
+            <p class="text-gray-700 leading-relaxed">${feedback.message}</p>
+            <div class="text-xs text-gray-400 text-right mt-2">${new Date(feedback.submitted_at).toLocaleString()}</div>
+          `;
+          list.appendChild(card);
+        });
+
+      } catch (err) {
+        const errorMsg = document.getElementById('errorMsg');
+        errorMsg.textContent = err.message;
+        errorMsg.classList.remove('hidden');
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchFeedbacks);
+  </script>
+</body>
+</html>
