@@ -126,7 +126,7 @@
 
   async function fetchStats() {
     try {
-      const res = await fetch('http://localhost:3000/admin/summary', {
+      const res = await fetch('http://https://casino-game-backend.onrender.com/admin/summary', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
