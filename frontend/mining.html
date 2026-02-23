@@ -160,8 +160,8 @@
       <div class="w-1/4 p-4 bg-gray-800">
         <label class="block text-sm font-medium">Bet Amount</label>
         <input type="number" id="betAmount" class="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
-        <label class="block text-sm font-medium mt-4">Number of Bombs</label>
-        <input type="number" id="numBombs" class="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
+        <label class="block text-sm font-medium mt-4">Number of Bombs (8–24)</label>
+        <input type="number" id="numBombs" min="8" max="24" placeholder="8 to 24" class="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md">
         <label class="block text-sm font-medium mt-4">Current Winnings</label>
         <input type="text" id="currentWinnings" class="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md font-bold text-green-400" readonly>
 
@@ -320,21 +320,18 @@
     }
 
     function updateMultiplier() {
-      // bombFactor: more bombs = higher risk = scales up the reward
+      // bombFactor: 8 bombs=1.0, 16 bombs=2.0, 24 bombs=3.0
       const bombFactor = numBombs / 8.0;
 
-      // betFactor: higher bet = higher reward multiplier
-      // Low bet + Low bombs = paise return
-      // High bet + High bombs = big return
+      // betFactor: low bet = paise return, high bet = real return
+      // Both bombFactor AND betFactor must be high for big rewards
       let betFactor;
-      if (betAmount < 10)       betFactor = 0.1;
-      else if (betAmount < 50)  betFactor = 0.3;
-      else if (betAmount < 100) betFactor = 0.6;
-      else if (betAmount < 500) betFactor = 0.85;
+      if (betAmount < 10)       betFactor = 0.05;   // paise territory
+      else if (betAmount < 50)  betFactor = 0.15;
+      else if (betAmount < 100) betFactor = 0.4;
+      else if (betAmount < 500) betFactor = 0.7;
       else                      betFactor = 1.0;
 
-      // Final multiplier = both factors combined
-      // Only high bombs AND high bet gives meaningful return
       multiplier = bombFactor * betFactor;
     }
 
@@ -412,8 +409,8 @@
       numBombs = parseInt(numBombsInput.value);
       betAmount = parseFloat(betAmountInput.value);
     
-      if (isNaN(numBombs) || numBombs <= 0 || numBombs >= totalTiles) {
-        showPopup('⚠️ Invalid Input', 'Please enter a valid number of bombs (1-24).', false);
+      if (isNaN(numBombs) || numBombs < 8 || numBombs > 24) {
+        showPopup('⚠️ Invalid Input', 'Number of bombs must be between 8 and 24.', false);
         return;
       }
     
