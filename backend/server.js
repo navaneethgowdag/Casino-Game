@@ -9,34 +9,48 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ── Configuration ──────────────────────────────────────────────────────────────
 const SECRET_KEY      = process.env.SECRET_KEY || 'c0dc0d0964e2fc14a28771e236c5df75fbd73bd286b1f7443a017eed77538968';
 const INITIAL_BALANCE = 100;
 const PORT            = process.env.PORT || 3000;
 
-// ── Neon PostgreSQL Pool ────────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL) {
-  console.error('FATAL: DATABASE_URL is not set. Set it in Render Environment Variables.');
+  console.error('FATAL: DATABASE_URL is not set.');
   process.exit(1);
 }
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  max: 10
 });
 
-// Catch idle/unexpected pool errors so server does not crash
 pool.on('error', (err) => {
-  console.error('Unexpected database pool error:', err.message);
+  console.error('Unexpected pool error:', err.message);
 });
 
-// ── Init: connect → create tables → seed users (all in sequence) ───────────────
+// Retry wrapper - handles Neon cold-start wakeup failures
+async function query(text, params) {
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await pool.query(text, params);
+    } catch (err) {
+      lastErr = err;
+      console.warn(`DB attempt ${attempt} failed: ${err.message}`);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
 async function initializeDatabase() {
   try {
-    const ping = await pool.query('SELECT NOW()');
+    const ping = await query('SELECT NOW()');
     console.log('Connected to Neon PostgreSQL at', ping.rows[0].now);
 
-    await pool.query(`
+    await query(`
       CREATE TABLE IF NOT EXISTS users (
         id         SERIAL PRIMARY KEY,
         username   TEXT UNIQUE NOT NULL,
@@ -49,7 +63,7 @@ async function initializeDatabase() {
     `);
     console.log('Users table ready');
 
-    await pool.query(`
+    await query(`
       CREATE TABLE IF NOT EXISTS feedback (
         id           SERIAL PRIMARY KEY,
         username     TEXT NOT NULL,
@@ -59,10 +73,8 @@ async function initializeDatabase() {
     `);
     console.log('Feedback table ready');
 
-    // Seed AFTER tables are confirmed to exist
     await createOrUpdateUser('admin',    'admin123',    true);
     await createOrUpdateUser('testuser', 'password123', false);
-
     console.log('Database initialization complete');
   } catch (err) {
     console.error('Database initialization failed:', err.message);
@@ -72,50 +84,47 @@ async function initializeDatabase() {
 async function createOrUpdateUser(username, password, isAdmin = false) {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
-
+    const existing = await query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
-      await pool.query(
-        'UPDATE users SET password = $1, is_admin = $2 WHERE username = $3',
-        [hashedPassword, isAdmin ? 1 : 0, username]
-      );
+      await query('UPDATE users SET password = $1, is_admin = $2 WHERE username = $3',
+        [hashedPassword, isAdmin ? 1 : 0, username]);
       console.log(`User '${username}' updated.`);
     } else {
-      await pool.query(
-        'INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
-        [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]
-      );
+      await query('INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
+        [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]);
       console.log(`User '${username}' created.`);
     }
   } catch (err) {
-    console.error(`Error seeding user '${username}':`, err.message);
+    console.error(`Error seeding '${username}':`, err.message);
   }
 }
 
 initializeDatabase();
 
-// ── Auth Middleware ─────────────────────────────────────────────────────────────
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
-
   jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) { console.error('JWT error:', err.message); return res.sendStatus(403); }
     req.user = user;
     next();
   });
 }
 
-// ── Routes ──────────────────────────────────────────────────────────────────────
-
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+// Health - also checks DB is alive
+app.get('/health', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.status(200).json({ status: 'OK', db: 'connected' });
+  } catch (err) {
+    res.status(500).json({ status: 'ERROR', db: err.message });
+  }
 });
 
 app.get('/leaderboard', async (req, res) => {
   try {
-    const result = await pool.query(
+    const result = await query(
       'SELECT username, balance, banned FROM users WHERE is_admin = 0 ORDER BY balance DESC LIMIT 100'
     );
     res.json(result.rows);
@@ -128,26 +137,22 @@ app.get('/leaderboard', async (req, res) => {
 app.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
+    if (!username || !password)
       return res.status(400).json({ error: 'Username and password are required' });
-    }
-    if (username.trim().length < 3) {
+    if (username.trim().length < 3)
       return res.status(400).json({ error: 'Username must be at least 3 characters' });
-    }
-    if (password.length < 6) {
+    if (password.length < 6)
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query(
+    await query(
       'INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, 0)',
       [username.trim(), hashedPassword, INITIAL_BALANCE]
     );
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-    if (err.code === '23505') {
+    if (err.code === '23505')
       return res.status(400).json({ error: 'Username already exists' });
-    }
     console.error('Register error:', err.message);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
   }
@@ -156,28 +161,37 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     const { username, password, adminLogin } = req.body;
-    if (!username || !password) {
+    if (!username || !password)
       return res.status(400).json({ error: 'Username and password are required' });
-    }
 
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
 
-    if (!user)                         return res.status(401).json({ error: 'Invalid username or password' });
-    if (user.banned)                   return res.status(403).json({ error: 'Account is banned' });
-    if (!adminLogin && user.is_admin)  return res.status(403).json({ error: 'Admins must log in from the admin portal' });
-    if (adminLogin  && !user.is_admin) return res.status(403).json({ error: 'Only admins can log in here' });
+    if (!user)
+      return res.status(401).json({ error: 'Invalid username or password' });
+
+    // Explicitly parse integers — Neon can return strings in some drivers
+    const isBanned = parseInt(user.banned)   === 1;
+    const isAdmin  = parseInt(user.is_admin) === 1;
+
+    if (isBanned)
+      return res.status(403).json({ error: 'Account is banned' });
+    if (!adminLogin && isAdmin)
+      return res.status(403).json({ error: 'Admins must log in from the admin portal' });
+    if (adminLogin && !isAdmin)
+      return res.status(403).json({ error: 'Only admins can log in here' });
 
     const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) return res.status(401).json({ error: 'Invalid username or password' });
+    if (!passwordMatch)
+      return res.status(401).json({ error: 'Invalid username or password' });
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, is_admin: user.is_admin },
+      { id: user.id, username: user.username, is_admin: isAdmin ? 1 : 0 },
       SECRET_KEY,
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
-    res.json({ token, balance: user.balance, is_admin: user.is_admin });
+    res.json({ token, balance: parseFloat(user.balance), is_admin: isAdmin ? 1 : 0 });
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
@@ -186,9 +200,10 @@ app.post('/login', async (req, res) => {
 
 app.get('/balance', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
-    if (!result.rows[0]) return res.status(404).json({ error: 'User not found' });
-    res.json({ balance: result.rows[0].balance });
+    const result = await query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
+    if (!result.rows[0])
+      return res.status(404).json({ error: 'User not found' });
+    res.json({ balance: parseFloat(result.rows[0].balance) });
   } catch (err) {
     console.error('Balance error:', err.message);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
@@ -198,15 +213,13 @@ app.get('/balance', authenticateToken, async (req, res) => {
 app.post('/update-balance', authenticateToken, async (req, res) => {
   try {
     const { amount } = req.body;
-    if (amount === undefined || amount === null) {
+    if (amount === undefined || amount === null)
       return res.status(400).json({ error: 'Amount is required' });
-    }
-    await pool.query(
-      'UPDATE users SET balance = balance + $1 WHERE id = $2',
-      [amount, req.user.id]
-    );
-    const result = await pool.query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
-    res.json({ balance: result.rows[0].balance });
+
+    await query('UPDATE users SET balance = balance + $1 WHERE id = $2',
+      [parseFloat(amount), req.user.id]);
+    const result = await query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
+    res.json({ balance: parseFloat(result.rows[0].balance) });
   } catch (err) {
     console.error('Update balance error:', err.message);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
@@ -217,11 +230,8 @@ app.post('/feedback', authenticateToken, async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
-
-    await pool.query(
-      'INSERT INTO feedback (username, message) VALUES ($1, $2)',
-      [req.user.username, message]
-    );
+    await query('INSERT INTO feedback (username, message) VALUES ($1, $2)',
+      [req.user.username, message]);
     res.json({ message: 'Feedback submitted successfully' });
   } catch (err) {
     console.error('Feedback error:', err.message);
@@ -232,7 +242,7 @@ app.post('/feedback', authenticateToken, async (req, res) => {
 app.get('/admin/feedback', authenticateToken, async (req, res) => {
   try {
     if (!req.user.is_admin) return res.status(403).json({ error: 'Admins only' });
-    const result = await pool.query('SELECT * FROM feedback ORDER BY submitted_at DESC');
+    const result = await query('SELECT * FROM feedback ORDER BY submitted_at DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Admin feedback error:', err.message);
@@ -244,7 +254,7 @@ app.post('/admin/reset-balance', authenticateToken, async (req, res) => {
   try {
     if (!req.user.is_admin) return res.status(403).json({ error: 'Admins only' });
     const { username } = req.body;
-    await pool.query('UPDATE users SET balance = 0 WHERE username = $1', [username]);
+    await query('UPDATE users SET balance = 0 WHERE username = $1', [username]);
     res.json({ message: 'Balance reset to zero' });
   } catch (err) {
     console.error('Reset balance error:', err.message);
@@ -256,7 +266,7 @@ app.post('/admin/set-ban', authenticateToken, async (req, res) => {
   try {
     if (!req.user.is_admin) return res.status(403).json({ error: 'Admins only' });
     const { username, banned } = req.body;
-    await pool.query('UPDATE users SET banned = $1 WHERE username = $2', [banned ? 1 : 0, username]);
+    await query('UPDATE users SET banned = $1 WHERE username = $2', [banned ? 1 : 0, username]);
     res.json({ message: banned ? 'User banned' : 'User unbanned' });
   } catch (err) {
     console.error('Set ban error:', err.message);
@@ -267,10 +277,10 @@ app.post('/admin/set-ban', authenticateToken, async (req, res) => {
 app.get('/admin/summary', authenticateToken, async (req, res) => {
   try {
     if (!req.user.is_admin) return res.status(403).json({ error: 'Admins only' });
-    const result = await pool.query('SELECT username, balance FROM users WHERE is_admin = 0');
+    const result = await query('SELECT username, balance FROM users WHERE is_admin = 0');
     const users         = result.rows;
     const totalUsers    = users.length;
-    const totalEarnings = users.reduce((acc, u) => acc + u.balance, 0);
+    const totalEarnings = users.reduce((acc, u) => acc + parseFloat(u.balance), 0);
     res.json({ totalUsers, totalEarnings, users });
   } catch (err) {
     console.error('Admin summary error:', err.message);
@@ -278,7 +288,6 @@ app.get('/admin/summary', authenticateToken, async (req, res) => {
   }
 });
 
-// ── Start ───────────────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
