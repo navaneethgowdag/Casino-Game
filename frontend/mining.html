@@ -326,11 +326,12 @@
       // betFactor: low bet = paise return, high bet = real return
       // Both bombFactor AND betFactor must be high for big rewards
       let betFactor;
-      if (betAmount < 10)       betFactor = 0.05;   // paise territory
-      else if (betAmount < 50)  betFactor = 0.15;
-      else if (betAmount < 100) betFactor = 0.4;
-      else if (betAmount < 500) betFactor = 0.7;
-      else                      betFactor = 1.0;
+      if (betAmount < 5)       betFactor = 0.05;
+      else if (betAmount < 25)  betFactor = 0.25;   // paise territory
+      else if (betAmount < 50)  betFactor = 0.50;
+      else if (betAmount < 100) betFactor = 0.75;
+      else if (betAmount < 500) betFactor = 1.0;
+      else                      betFactor = 1.5;
 
       multiplier = bombFactor * betFactor;
     }
