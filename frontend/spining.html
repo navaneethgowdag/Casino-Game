@@ -158,6 +158,7 @@
     let availableAmount = 0;
     let pendingAmount = 0;
     let currentWinnings = 0; // To store the winnings until OK is clicked
+    let pendingNetChange = 0;  // Net balance change to send to server
 
     // DOM elements
     const popupOverlay = document.getElementById('popupOverlay');
@@ -228,13 +229,17 @@
       popupOverlay.classList.add('active');
     }
 
-    function hidePopup() {
+    async function hidePopup() {
       popupOverlay.classList.remove('active');
       popupContent.classList.remove('win-effect', 'lose-effect');
       
-      // Update the server balance only after OK is clicked
-      updateServerBalance(currentWinnings);
-      currentWinnings = 0; // Reset for next round
+      // Send the NET balance change to server:
+      // currentWinnings is already the net (winnings include bet return on win, 0 on loss)
+      // But bet was deducted locally, so server needs: currentWinnings - betAmount
+      // We store netChange before resetting
+      await updateServerBalance(pendingNetChange);
+      pendingNetChange = 0;
+      currentWinnings = 0;
     }
 
     async function fetchBalance() {
@@ -245,7 +250,7 @@
       }
 
       try {
-        const response = await fetch('http://localhost:3000/balance', {
+        const response = await fetch('https://casino-game-backend.onrender.com/balance', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -271,7 +276,7 @@
       }
 
       try {
-        const response = await fetch('http://localhost:3000/update-balance', {
+        const response = await fetch('https://casino-game-backend.onrender.com/update-balance', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -367,20 +372,22 @@
     
       if (r1 === r2 && r2 === r3) {
         currentWinnings = betAmount * symbolMultipliers[r1];
-        playSound('win'); // Jackpot win sound
+        pendingNetChange = currentWinnings - betAmount; // gross win minus bet = net profit
+        playSound('win');
         showPopup('🎉 JACKPOT!', `You won ₹${currentWinnings.toFixed(2)} with triple ${r1}!`, true);
       } else if (r1 === r2 || r2 === r3 || r1 === r3) {
         currentWinnings = betAmount * 1.5;
-        playSound('smallWin'); // Partial win sound
+        pendingNetChange = currentWinnings - betAmount; // net profit
+        playSound('smallWin');
         showPopup('🎊 Nice Try!', `You won ₹${currentWinnings.toFixed(2)} with two matching symbols!`, true);
       } else {
         currentWinnings = 0;
-        playSound('lose'); // Losing sound
+        pendingNetChange = -betAmount; // lost the bet
+        playSound('lose');
         showPopup('💔 Better Luck!', 'No match this time. Try again!', false);
       }
     
-    
-      // Update local balance immediately for better UX
+      // Update local display immediately for better UX
       availableAmount += currentWinnings;
       balanceDisplay.textContent = `₹${availableAmount.toFixed(2)}`;
       

@@ -237,7 +237,7 @@
     }
 
     try {
-      const res = await fetch('http://localhost:3000/feedback', {
+      const res = await fetch('https://casino-game-backend.onrender.com/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -335,7 +335,7 @@
         }
 
         try {
-            const response = await fetch('http://localhost:3000/balance', {
+            const response = await fetch('https://casino-game-backend.onrender.com/balance', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -343,7 +343,7 @@
 
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('balanceDisplay').textContent = `$${data.balance.toFixed(2)}`;
+                document.getElementById('balanceDisplay').textContent = `₹${parseFloat(data.balance).toFixed(2)}`;
 
                 const username = localStorage.getItem('username');
                 if (username) {

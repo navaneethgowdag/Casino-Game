@@ -288,7 +288,7 @@
       const token = localStorage.getItem('token');
       if (!token) return window.location.href = 'login.html';
       try {
-        const res = await fetch('http://localhost:3000/balance', {
+        const res = await fetch('https://casino-game-backend.onrender.com/balance', {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         const data = await res.json();
@@ -303,7 +303,7 @@
       const token = localStorage.getItem('token');
       if (!token) return window.location.href = 'login.html';
       try {
-        const res = await fetch('http://localhost:3000/update-balance', {
+        const res = await fetch('https://casino-game-backend.onrender.com/update-balance', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -379,7 +379,7 @@
       if (revealedCount === totalTiles - numBombs) {
         playSound('win');
         gameStarted = false;
-        pendingBalanceUpdate = currentWinnings;
+        pendingBalanceUpdate = currentWinnings - betAmount; // net: winnings minus original bet
         gameCompleted = true;
         showPopup('🏆 Board Cleared!', `You won ₹${currentWinnings.toFixed(2)} by clearing the board!`, true);
       }
@@ -423,7 +423,7 @@
 
       if (currentWinnings > 0) {
         playSound('cashout');
-        pendingBalanceUpdate = parseFloat(currentWinnings);
+        pendingBalanceUpdate = parseFloat(currentWinnings) - betAmount; // net: winnings minus original bet
         gameCompleted = true;
         showPopup('💰 Cash Out!', `You cashed out ₹${currentWinnings.toFixed(2)}!`, true);
       } else {
@@ -437,10 +437,10 @@
     });
 
 
-    popupButton.addEventListener('click', () => {
+    popupButton.addEventListener('click', async () => {
       hidePopup();
       if (gameCompleted) {
-        updateServerBalance(pendingBalanceUpdate);
+        await updateServerBalance(pendingBalanceUpdate);
         pendingBalanceUpdate = 0;
         gameCompleted = false;
       }
