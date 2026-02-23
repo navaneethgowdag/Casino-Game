@@ -320,9 +320,27 @@
     }
 
     function updateMultiplier() {
-      if (numBombs >= 1 && numBombs <= 5) multiplier = 1.2 + numBombs * 0.1;
-      else if (numBombs >= 6 && numBombs <= 15) multiplier = 1.6 + (numBombs - 5) * 0.1;
-      else multiplier = 2.6 + (numBombs - 15) * 0.1;
+      // Base multiplier from number of bombs
+      let baseMultiplier;
+      if (numBombs >= 1 && numBombs <= 5) baseMultiplier = 1.2 + numBombs * 0.1;
+      else if (numBombs >= 6 && numBombs <= 15) baseMultiplier = 1.6 + (numBombs - 5) * 0.1;
+      else baseMultiplier = 2.6 + (numBombs - 15) * 0.1;
+
+      // Bet penalty: low bets get heavily reduced multiplier
+      // ₹1-9    → 20% of base (very low reward)
+      // ₹10-49  → 50% of base
+      // ₹50-99  → 75% of base
+      // ₹100+   → full base multiplier
+      let betPenalty;
+      if (betAmount < 10)       betPenalty = 0.20;
+      else if (betAmount < 50)  betPenalty = 0.50;
+      else if (betAmount < 100) betPenalty = 0.75;
+      else                      betPenalty = 1.00;
+
+      multiplier = baseMultiplier * betPenalty;
+
+      // Hard floor: multiplier can never go below 1.05 (always slight house edge)
+      if (multiplier < 1.05) multiplier = 1.05;
     }
 
     function generateTiles() {
