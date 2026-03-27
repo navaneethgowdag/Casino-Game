@@ -82,16 +82,16 @@ async function initializeDatabase() {
 }
 
 async function createOrUpdateUser(username, password, isAdmin = false) {
-  const existing = await query('SELECT id FROM users WHERE username = $1', [username]);
-  if (existing.rows.length > 0) {
-    console.log(`User '${username}' already exists, skipping.`); // ← don't overwrite
-    return;
-  }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  await query('INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
-    [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]);
-  console.log(`User '${username}' created.`);
-}
+  try {
+    const existing = await query('SELECT id FROM users WHERE username = $1', [username]);
+    if (existing.rows.length > 0) {
+      console.log(`User '${username}' already exists, skipping.`);
+      return;
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await query('INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
+      [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]);
+    console.log(`User '${username}' created.`);
   } catch (err) {
     console.error(`Error seeding '${username}':`, err.message);
   }
