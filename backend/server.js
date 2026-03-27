@@ -82,18 +82,16 @@ async function initializeDatabase() {
 }
 
 async function createOrUpdateUser(username, password, isAdmin = false) {
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const existing = await query('SELECT id FROM users WHERE username = $1', [username]);
-    if (existing.rows.length > 0) {
-      await query('UPDATE users SET password = $1, is_admin = $2 WHERE username = $3',
-        [hashedPassword, isAdmin ? 1 : 0, username]);
-      console.log(`User '${username}' updated.`);
-    } else {
-      await query('INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
-        [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]);
-      console.log(`User '${username}' created.`);
-    }
+  const existing = await query('SELECT id FROM users WHERE username = $1', [username]);
+  if (existing.rows.length > 0) {
+    console.log(`User '${username}' already exists, skipping.`); // ← don't overwrite
+    return;
+  }
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await query('INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, $4)',
+    [username, hashedPassword, INITIAL_BALANCE, isAdmin ? 1 : 0]);
+  console.log(`User '${username}' created.`);
+}
   } catch (err) {
     console.error(`Error seeding '${username}':`, err.message);
   }
@@ -145,11 +143,25 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await query(
-      'INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, 0)',
+    const insertResult = await query(
+      'INSERT INTO users (username, password, balance, banned, is_admin) VALUES ($1, $2, $3, 0, 0) RETURNING id',
       [username.trim(), hashedPassword, INITIAL_BALANCE]
     );
-    res.status(201).json({ message: 'User registered successfully' });
+
+    // Auto-login: generate token immediately after register
+    const userId = insertResult.rows[0].id;
+    const token = jwt.sign(
+      { id: userId, username: username.trim(), is_admin: 0 },
+      SECRET_KEY,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({ 
+      message: 'User registered successfully',
+      token,                        // ← return token
+      balance: INITIAL_BALANCE,
+      is_admin: 0
+    });
   } catch (err) {
     if (err.code === '23505')
       return res.status(400).json({ error: 'Username already exists' });
@@ -164,7 +176,9 @@ app.post('/login', async (req, res) => {
     if (!username || !password)
       return res.status(400).json({ error: 'Username and password are required' });
 
-    const result = await query('SELECT * FROM users WHERE username = $1', [username]);
+    const normalizedUsername = username.trim(); // ← ADD THIS
+
+    const result = await query('SELECT * FROM users WHERE username = $1', [normalizedUsername]); // ← use normalized
     const user = result.rows[0];
 
     if (!user)
