@@ -100,6 +100,14 @@
         const lowercaseCriteria = document.getElementById('lowercase');
         const numberCriteria = document.getElementById('number');
         const specialCriteria = document.getElementById('special');
+        const res = await fetch('/register', { method: 'POST', body: ... });
+        const data = await res.json();
+        
+        if (data.token) {
+          localStorage.setItem('token', data.token);       // same as login
+          localStorage.setItem('balance', data.balance);
+          window.location.href = '/dashboard';             // redirect directly
+        }
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
